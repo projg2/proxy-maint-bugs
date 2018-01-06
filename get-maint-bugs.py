@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import bugz.bugzilla
+import bugzilla
 import gentoopm
 import os.path
 import pickle
@@ -28,29 +28,28 @@ def main(maint_fn):
         with open(token_file, 'r') as f:
             token = f.read().strip()
     except IOError:
-        print('! Bugz token not found, please run "bugz login" first')
+        print('Put bugzilla API key into ~/.bugz_token')
         return 1
 
     with open(maint_fn, 'rb') as f:
         maints = pickle.load(f)
 
-    bz = bugz.bugzilla.BugzillaProxy('https://bugs.gentoo.org/xmlrpc.cgi')
-    res = bz.Bug.search({
-        'Bugzilla_token': token,
-        'product': 'Gentoo Developers/Staff',
-        'component': 'Proxied maintainers',
-    })
+    bz = bugzilla.Bugzilla('https://bugs.gentoo.org', api_key=token)
+    q = bz.build_query(
+        product='Gentoo Developers/Staff',
+        component='Proxied maintainers')
+    bugs = bz.query(q)
 
     found = set()
-    for b in res['bugs']:
-        assignee = b['assigned_to'].lower()
+    for b in bugs:
+        assignee = b.assigned_to.lower()
         if assignee in maints:
             found.add(assignee)
-            if b['status'] == 'RESOLVED':
-                print('Needs reopening: https://bugs.gentoo.org/%s' % b['id'])
+            if b.status == 'RESOLVED':
+                print('Needs reopening: https://bugs.gentoo.org/%s' % b.id)
         else:
-            if b['status'] != 'RESOLVED':
-                print('Unmatched bug: https://bugs.gentoo.org/%s' % b['id'])
+            if b.status != 'RESOLVED':
+                print('Unmatched bug: https://bugs.gentoo.org/%s' % b.id)
 
     failed = set()
     for email, name in maints.items():
@@ -61,24 +60,22 @@ def main(maint_fn):
         if name is not None:
             formatted_name = '%s (%s)' % (name, formatted_name)
 
-        new_bug = {
-            'Bugzilla_token': token,
-            'product': 'Gentoo Developers/Staff',
-            'component': 'Proxied maintainers',
-            'version': 'All',
-            'assigned_to': email,
-            'cc': 'proxy-maint@gentoo.org',
-            'summary': 'Maintainer: %s' % formatted_name,
-            'description': DESCRIPTION,
-        }
+        q = bz.build_createbug(
+            product='Gentoo Developers/Staff',
+            component='Proxied maintainers',
+            version='All',
+            assigned_to=email,
+            cc='proxy-maint@gentoo.org',
+            summary='Maintainer: %s' % formatted_name,
+            description=DESCRIPTION)
 
         try:
-            ret = bz.Bug.create(new_bug)
+            ret = bz.createbug(q)
         except Exception as e:
             print(e)
             failed.add(email)
         else:
-            print('Filed bug #%d' % ret['id'])
+            print('Filed bug #%d' % ret.id)
 
 
     if failed:
