@@ -38,7 +38,7 @@ def main():
                 continue
             maints[m.email.lower()] = m.name
 
-    #pickle.dump(maints, sys.stdout.buffer)
+    pickle.dump(maints, sys.stdout.buffer)
     for maint, data in sorted(extra_maints.items()):
         other_maints = defaultdict(set)
         for p in data:
