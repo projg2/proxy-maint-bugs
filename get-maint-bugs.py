@@ -46,8 +46,11 @@ def main(maint_fn):
         assignee = b['assigned_to'].lower()
         if assignee in maints:
             found.add(assignee)
+            if b['status'] == 'RESOLVED':
+                print('Needs reopening: https://bugs.gentoo.org/%s' % b['id'])
         else:
-            print('Unmatched bug: https://bugs.gentoo.org/%s' % b['id'])
+            if b['status'] != 'RESOLVED':
+                print('Unmatched bug: https://bugs.gentoo.org/%s' % b['id'])
 
     failed = set()
     for email, name in maints.items():
