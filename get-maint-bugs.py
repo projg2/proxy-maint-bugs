@@ -63,7 +63,7 @@ def main(maint_fn):
         q = bz.build_createbug(
             product='Gentoo Developers/Staff',
             component='Proxied maintainers',
-            version='All',
+            version='unspecified',
             assigned_to=email,
             cc='proxy-maint@gentoo.org',
             summary='Maintainer: %s' % formatted_name,
